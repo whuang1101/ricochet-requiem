@@ -16,7 +16,9 @@ func _process(delta: float) -> void:
 
 func fire() -> void:
 	var slugs := get_tree().get_nodes_in_group("slugs")
-	if slugs.size() >= Balance.MAX_SLUGS:
+	var gun: String = get_node("/root/Game").active_gun
+	var max_slugs := Balance.MAX_SLUGS if gun != "tuba" else 2
+	if slugs.size() >= max_slugs:
 		return
 	_cooldown = 1.0 / Balance.FIRE_RATE
 	var slug := SlugScript.new()
@@ -30,3 +32,9 @@ func fire() -> void:
 	var player: RequiemPlayer = get_parent()
 	slug.setup(player.global_position + player.aim_direction() * (Balance.PLAYER_RADIUS + 8.0), player.aim_direction())
 	player.position -= player.aim_direction() * Balance.MUZZLE_NUDGE
+	if gun == "fanfare":
+		for angle in [-12.0, 12.0]:
+			var fan_slug := SlugScript.new()
+			fan_slug.add_to_group("slugs")
+			get_tree().current_scene.add_child(fan_slug)
+			fan_slug.setup(player.global_position, player.aim_direction().rotated(deg_to_rad(angle)))

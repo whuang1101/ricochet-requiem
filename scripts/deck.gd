@@ -43,6 +43,7 @@ var modifiers := {
 var chosen_cards: Array[String] = []
 var start_offers := ["split_chime", "long_echo", "dead_weight"]
 var start_chosen := false
+var encore_boons: Array[String] = []
 
 func _ready() -> void:
 	add_to_group("deck")
@@ -77,3 +78,10 @@ func apply_card(card_id: String) -> void:
 		"choir_memory": modifiers.choir_memory = true
 		"finale": modifiers.finale = true
 	card_chosen.emit(card_id)
+
+func choose_encore(index: int) -> bool:
+	var choices := ["max_hp", "free_reroll"]
+	if index < 0 or index >= choices.size():
+		return false
+	encore_boons.append(choices[index])
+	return true

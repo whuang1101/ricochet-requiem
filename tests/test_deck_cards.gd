@@ -18,6 +18,9 @@ func _init() -> void:
 	echo_deck.apply_card("long_echo")
 	_check(echo_deck.modifiers.extra_bounces == 2 and is_equal_approx(echo_deck.modifiers.extra_lifetime, 1.0), "Long Echo must change slug lifespan and cap")
 	echo_deck.free()
+	var encore_deck := DeckScript.new()
+	_check(encore_deck.choose_encore(0) and encore_deck.encore_boons.has("max_hp"), "Encore must offer a boon choice")
+	encore_deck.free()
 	if failures.is_empty():
 		print("PASS test_deck_cards: all card effects register through Deck.modifiers")
 		quit(0)

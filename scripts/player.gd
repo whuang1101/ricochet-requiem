@@ -2,6 +2,7 @@ class_name RequiemPlayer
 extends CharacterBody2D
 
 signal damaged(amount: int, hp_remaining: int)
+signal died
 
 var _dash_timer := 0.0
 var _dash_cooldown := 0.0
@@ -48,6 +49,8 @@ func heal(amount: int) -> void:
 func take_damage(amount: int) -> void:
 	hp = maxi(hp - amount, 0)
 	damaged.emit(amount, hp)
+	if hp == 0:
+		died.emit()
 
 func _draw() -> void:
 	draw_circle(Vector2.ZERO, Balance.PLAYER_RADIUS, Color("#f2eee5"))

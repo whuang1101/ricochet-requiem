@@ -27,6 +27,8 @@ var _deck: Deck
 var _room_took_damage := false
 var _motifs := 0
 var _best_flourish := 0
+var _encore_available := false
+var _run_over := false
 
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color("#171820"))
@@ -37,6 +39,7 @@ func _ready() -> void:
 	player.position = Vector2.ZERO
 	player.add_to_group("player")
 	player.damaged.connect(_on_player_damaged)
+	player.died.connect(_on_player_died)
 	var camera := Camera2D.new()
 	camera.script = CameraShakeScript
 	player.add_child(camera)
@@ -54,12 +57,22 @@ func _ready() -> void:
 	_build_hud()
 
 func _process(_delta: float) -> void:
+	if _run_over:
+		if Input.is_action_just_pressed("restart_run"):
+			get_tree().reload_current_scene()
+		return
 	if Input.is_action_just_pressed("choose_card_1"):
 		_deck.choose_start(0)
 	if Input.is_action_just_pressed("choose_card_2"):
 		_deck.choose_start(1)
 	if Input.is_action_just_pressed("choose_card_3"):
 		_deck.choose_start(2)
+	if _encore_available and Input.is_action_just_pressed("choose_encore_1"):
+		_deck.choose_encore(0)
+		_encore_available = false
+	if _encore_available and Input.is_action_just_pressed("choose_encore_2"):
+		_deck.choose_encore(1)
+		_encore_available = false
 	if Input.is_action_just_pressed("restart_run"):
 		get_tree().reload_current_scene()
 	if Input.is_action_just_pressed("advance_room") and _flow.choose_next_room():
@@ -71,10 +84,15 @@ func _process(_delta: float) -> void:
 			door_text = "CHOOSE A FIRST TRICK: [1] Split Chime  [2] Long Echo  [3] Dead Weight"
 		if _flow.waiting_for_door:
 			door_text = "ROOM CLEAR  //  [E] NEXT DOOR"
+		if _encore_available:
+			door_text = "ENCORE: [1] max HP boon  [2] free reroll"
+		if _run_over:
+			door_text = "RUN OVER  //  Best Flourish ×%d  Motifs %d  [R] restart" % [_best_flourish, _motifs]
 		_hud.text = "RICOCHET REQUIEM  //  P0 GRAY ROOM\nWASD move   SPACE dash   LMB fire   Q Cadenza   R restart\nDead slugs tune. First wall bounce makes them LIVE.\nHP %d / %d   Notes %d / %d   Motifs %d   Slugs %d / %d\n%s" % [player.hp, Balance.PLAYER_MAX_HP, _requiem.notes, Balance.REQUIEM_BANK_CAP, _motifs, get_tree().get_nodes_in_group("slugs").size(), Balance.MAX_SLUGS, door_text]
 
 func _load_room() -> void:
 	_room_took_damage = false
+	_encore_available = false
 	for child in _room_host.get_children():
 		child.queue_free()
 	for enemy in get_tree().get_nodes_in_group("enemies"):
@@ -104,6 +122,7 @@ func _on_enemy_died(at: Vector2, spawn_resonance: bool, bounces: int, tuned: boo
 	FX.burst(self, at, Color("#f0d38a"), 10)
 	if _flow.waiting_for_door and not _room_took_damage:
 		_motifs += 1
+		_encore_available = true
 	if not spawn_resonance:
 		return
 	var note := ResonanceNoteScript.new()
@@ -118,6 +137,9 @@ func _on_wailer_shot(origin: Vector2, direction: Vector2) -> void:
 func _on_player_damaged(_amount: int, _hp_remaining: int) -> void:
 	_room_took_damage = true
 	_requiem.on_player_hit()
+
+func _on_player_died() -> void:
+	_run_over = true
 
 func _on_flourish(kill_count: int) -> void:
 	_best_flourish = maxi(_best_flourish, kill_count)
