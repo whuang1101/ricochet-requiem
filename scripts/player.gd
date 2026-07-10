@@ -4,6 +4,7 @@ extends CharacterBody2D
 var _dash_timer := 0.0
 var _dash_cooldown := 0.0
 var _aim_direction := Vector2.RIGHT
+var hp := Balance.PLAYER_MAX_HP
 
 func _physics_process(delta: float) -> void:
 	_dash_timer = maxf(_dash_timer - delta, 0.0)
@@ -25,6 +26,9 @@ func _physics_process(delta: float) -> void:
 
 func aim_direction() -> Vector2:
 	return _aim_direction
+
+func heal(amount: int) -> void:
+	hp = mini(hp + amount, Balance.PLAYER_MAX_HP)
 
 func _draw() -> void:
 	draw_circle(Vector2.ZERO, Balance.PLAYER_RADIUS, Color("#f2eee5"))

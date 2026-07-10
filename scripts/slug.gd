@@ -22,6 +22,18 @@ func setup(origin: Vector2, shot_direction: Vector2) -> void:
 		circle.radius = Balance.SLUG_RADIUS
 		collision_shape.shape = circle
 		add_child(collision_shape)
+	if get_node_or_null("Hitbox") == null:
+		var hitbox := Area2D.new()
+		hitbox.name = "Hitbox"
+		hitbox.collision_layer = 4
+		hitbox.collision_mask = 2
+		var hit_shape := CollisionShape2D.new()
+		var hit_circle := CircleShape2D.new()
+		hit_circle.radius = Balance.SLUG_RADIUS
+		hit_shape.shape = hit_circle
+		hitbox.add_child(hit_shape)
+		hitbox.area_entered.connect(_on_hit_area)
+		add_child(hitbox)
 	global_position = origin
 	direction = shot_direction.normalized()
 	velocity = direction * Balance.SLUG_SPEED
@@ -75,3 +87,7 @@ func _draw() -> void:
 func _tier_color() -> Color:
 	var colors := [Color("#f5d06f"), Color("#f2a65a"), Color("#ee7654"), Color("#dd4d87"), Color("#b36cff")]
 	return colors[mini(maxi(tier, 1) - 1, colors.size() - 1)]
+
+func _on_hit_area(area: Area2D) -> void:
+	if area is RequiemEnemy:
+		area.apply_slug_hit(state, bounces)
