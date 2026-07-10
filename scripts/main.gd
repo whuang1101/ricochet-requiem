@@ -6,13 +6,25 @@ const EnemyScript := preload("res://scripts/enemy.gd")
 const ResonanceNoteScript := preload("res://scripts/resonance_note.gd")
 const WailerShotScript := preload("res://scripts/wailer_shot.gd")
 const RequiemScript := preload("res://scripts/requiem.gd")
+const RunFlowScript := preload("res://scripts/run_flow.gd")
+const RoomScenes := [
+	preload("res://scenes/room_01.tscn"),
+	preload("res://scenes/room_02.tscn"),
+	preload("res://scenes/room_03.tscn"),
+	preload("res://scenes/room_04.tscn"),
+	preload("res://scenes/room_05.tscn"),
+]
 
 var _hud: Label
 var _requiem: Requiem
+var _flow: RunFlow
+var _room_host: Node2D
 
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color("#171820"))
-	_build_room()
+	_room_host = Node2D.new()
+	_room_host.name = "RoomHost"
+	add_child(_room_host)
 	var player := PlayerScript.new()
 	player.position = Vector2.ZERO
 	player.add_to_group("player")
@@ -21,15 +33,33 @@ func _ready() -> void:
 	add_child(player)
 	_requiem = RequiemScript.new()
 	add_child(_requiem)
-	_spawn_enemy("chorister", Vector2(-260.0, -140.0))
-	_spawn_enemy("sidler", Vector2(280.0, -120.0))
-	_spawn_enemy("wailer", Vector2(220.0, 150.0))
+	_flow = RunFlowScript.new()
+	add_child(_flow)
+	_load_room()
 	_build_hud()
 
 func _process(_delta: float) -> void:
+	if Input.is_action_just_pressed("restart_run"):
+		get_tree().reload_current_scene()
+	if Input.is_action_just_pressed("advance_room") and _flow.choose_next_room():
+		_load_room()
 	if is_instance_valid(_hud):
 		var player := get_tree().get_first_node_in_group("player")
-		_hud.text = "RICOCHET REQUIEM  //  P0 GRAY ROOM\nWASD move   SPACE dash   LMB fire   Q Cadenza\nDead slugs tune. First wall bounce makes them LIVE.\nHP %d / %d   Notes %d / %d   Slugs %d / %d" % [player.hp, Balance.PLAYER_MAX_HP, _requiem.notes, Balance.REQUIEM_BANK_CAP, get_tree().get_nodes_in_group("slugs").size(), Balance.MAX_SLUGS]
+		var door_text := "DOORS LOCKED"
+		if _flow.waiting_for_door:
+			door_text = "ROOM CLEAR  //  [E] NEXT DOOR"
+		_hud.text = "RICOCHET REQUIEM  //  P0 GRAY ROOM\nWASD move   SPACE dash   LMB fire   Q Cadenza   R restart\nDead slugs tune. First wall bounce makes them LIVE.\nHP %d / %d   Notes %d / %d   Slugs %d / %d\n%s" % [player.hp, Balance.PLAYER_MAX_HP, _requiem.notes, Balance.REQUIEM_BANK_CAP, get_tree().get_nodes_in_group("slugs").size(), Balance.MAX_SLUGS, door_text]
+
+func _load_room() -> void:
+	for child in _room_host.get_children():
+		child.queue_free()
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		enemy.queue_free()
+	var room: RoomDef = RoomScenes[_flow.room_index].instantiate()
+	_room_host.add_child(room)
+	room.spawn_requested.connect(_spawn_enemy)
+	_flow.start_room(3)
+	room.begin()
 
 func _spawn_enemy(kind: String, at: Vector2) -> void:
 	var enemy := EnemyScript.new()
@@ -41,6 +71,7 @@ func _spawn_enemy(kind: String, at: Vector2) -> void:
 
 func _on_enemy_died(at: Vector2, spawn_resonance: bool, bounces: int, tuned: bool) -> void:
 	_requiem.award_kill(bounces, tuned)
+	_flow.enemy_defeated()
 	if not spawn_resonance:
 		return
 	var note := ResonanceNoteScript.new()
@@ -55,40 +86,9 @@ func _on_wailer_shot(origin: Vector2, direction: Vector2) -> void:
 func _on_player_damaged(_amount: int, _hp_remaining: int) -> void:
 	_requiem.on_player_hit()
 
-func _build_room() -> void:
-	var half := Balance.ROOM_SIZE / 2.0
-	_add_wall(Vector2(0.0, -half.y), Vector2(Balance.ROOM_SIZE.x, Balance.WALL_THICKNESS))
-	_add_wall(Vector2(0.0, half.y), Vector2(Balance.ROOM_SIZE.x, Balance.WALL_THICKNESS))
-	_add_wall(Vector2(-half.x, 0.0), Vector2(Balance.WALL_THICKNESS, Balance.ROOM_SIZE.y))
-	_add_wall(Vector2(half.x, 0.0), Vector2(Balance.WALL_THICKNESS, Balance.ROOM_SIZE.y))
-	var pillar := StaticBody2D.new()
-	pillar.position = Vector2(0.0, -70.0)
-	var shape := CollisionShape2D.new()
-	var rectangle := RectangleShape2D.new()
-	rectangle.size = Vector2(150.0, Balance.WALL_THICKNESS)
-	shape.shape = rectangle
-	pillar.add_child(shape)
-	add_child(pillar)
-
-func _add_wall(pos: Vector2, size: Vector2) -> void:
-	var wall := StaticBody2D.new()
-	wall.position = pos
-	var shape := CollisionShape2D.new()
-	var rectangle := RectangleShape2D.new()
-	rectangle.size = size
-	shape.shape = rectangle
-	wall.add_child(shape)
-	add_child(wall)
-
 func _build_hud() -> void:
 	_hud = Label.new()
 	_hud.position = Vector2(28.0, 24.0)
 	_hud.add_theme_color_override("font_color", Color("#d6d0c4"))
 	_hud.add_theme_font_size_override("font_size", 16)
 	add_child(_hud)
-
-func _draw() -> void:
-	var half := Balance.ROOM_SIZE / 2.0
-	draw_rect(Rect2(-half, Balance.ROOM_SIZE), Color("#22242e"))
-	draw_rect(Rect2(-half, Balance.ROOM_SIZE), Color("#69616a"), false, 4.0)
-	draw_rect(Rect2(Vector2(-75.0, -82.0), Vector2(150.0, 24.0)), Color("#4d4650"))
