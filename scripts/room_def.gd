@@ -21,7 +21,14 @@ func _layout_enemies() -> Array:
 		[{"kind": "sidler", "at": Vector2(-260.0, -180.0)}, {"kind": "sidler", "at": Vector2(260.0, 180.0)}, {"kind": "wailer", "at": Vector2(0.0, -180.0)}],
 		[{"kind": "chorister", "at": Vector2(-310.0, 0.0)}, {"kind": "wailer", "at": Vector2(310.0, 0.0)}, {"kind": "sidler", "at": Vector2(0.0, 200.0)}],
 	]
-	return layouts[room_id % layouts.size()]
+	var base: Array = layouts[room_id % layouts.size()]
+	if room_id >= 5:
+		base = base.duplicate(true)
+		base[0].kind = "mirrorback" if room_id % 2 == 0 else "mason"
+	if room_id >= 10:
+		base = base.duplicate(true)
+		base[1].kind = "bellringer"
+	return base
 
 func _build_walls() -> void:
 	var half := Balance.ROOM_SIZE / 2.0

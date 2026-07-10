@@ -41,6 +41,12 @@ func _physics_process(delta: float) -> void:
 		if _shot_cooldown <= 0.0:
 			shot_fired.emit(global_position, global_position.direction_to(player.global_position))
 			_shot_cooldown = Balance.WAILER_FIRE_INTERVAL
+	elif player and kind == "mirrorback":
+		global_position += global_position.direction_to(player.global_position) * Balance.ENEMY_SPEED[kind] * delta
+	elif player and kind == "mason":
+		global_position += global_position.direction_to(player.global_position) * Balance.ENEMY_SPEED[kind] * delta
+	elif player and kind == "bellringer":
+		global_position += global_position.direction_to(player.global_position) * Balance.ENEMY_SPEED[kind] * delta
 	queue_redraw()
 
 func apply_slug_hit(slug_state: int, bounces: int) -> Dictionary:
@@ -65,7 +71,7 @@ func is_tuned() -> bool:
 	return _tuned_remaining > 0.0
 
 func _draw() -> void:
-	var colors := {"chorister": Color("#bd7d8d"), "sidler": Color("#7199c8"), "wailer": Color("#b08ac7")}
+	var colors := {"chorister": Color("#bd7d8d"), "sidler": Color("#7199c8"), "wailer": Color("#b08ac7"), "mirrorback": Color("#d0a65e"), "mason": Color("#8ca17e"), "bellringer": Color("#cf6b6b"), "organist": Color("#e7d5a1")}
 	var color: Color = colors[kind]
 	if is_tuned():
 		color = Color("#d8cf73")

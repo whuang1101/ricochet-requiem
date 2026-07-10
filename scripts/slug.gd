@@ -5,6 +5,7 @@ extends CharacterBody2D
 signal bounced(tier: int, at: Vector2)
 signal detonated(at: Vector2, tier: int)
 signal expired
+signal flourish(kill_count: int)
 
 enum State { DEAD, LIVE }
 
@@ -14,6 +15,10 @@ var bounces := 0
 var lifetime := Balance.SLUG_LIFETIME
 var direction := Vector2.RIGHT
 var _finished := false
+var max_bounces := Balance.MAX_BOUNCES
+var live_speed_bonus := 0.0
+var can_split := true
+var kills := 0
 
 func setup(origin: Vector2, shot_direction: Vector2) -> void:
 	if get_node_or_null("CollisionShape2D") == null:
@@ -52,13 +57,15 @@ func simulate_step(delta: float) -> void:
 	var collision := move_and_collide(velocity * delta)
 	if collision:
 		global_position = collision.get_position()
-		velocity = velocity.bounce(collision.get_normal()) * Balance.SLUG_BOUNCE_SPEED_MULTIPLIER
+		velocity = velocity.bounce(collision.get_normal()) * (Balance.SLUG_BOUNCE_SPEED_MULTIPLIER + live_speed_bonus)
 		bounces += 1
 		tier = mini(bounces, Balance.MAX_BOUNCES)
 		state = State.LIVE
 		bounced.emit(tier, global_position)
 		queue_redraw()
-		if bounces >= Balance.MAX_BOUNCES:
+		if bounces == 2:
+			_split_if_enabled()
+		if bounces >= max_bounces:
 			detonate()
 		return
 	queue_redraw()
@@ -90,9 +97,31 @@ func _tier_color() -> Color:
 
 func _on_hit_area(area: Area2D) -> void:
 	if area is RequiemEnemy:
-		area.apply_slug_hit(state, bounces)
+		var result: Dictionary = area.apply_slug_hit(state, bounces)
+		if result.killed:
+			kills += 1
+			if kills >= 2:
+				flourish.emit(kills)
 	elif area.name == "Hurtbox" and state == State.LIVE:
 		var player := area.get_parent()
 		if player:
 			var damage := ceili(Balance.DAMAGE_TIERS[tier] * Balance.SELF_DAMAGE_FRACTION)
 			player.take_damage(damage)
+
+func _split_if_enabled() -> void:
+	var deck := get_tree().get_first_node_in_group("deck")
+	if not can_split or not deck or not deck.modifiers.split_chime:
+		return
+	can_split = false
+	for angle in [-20.0, 20.0]:
+		var child_slug := Slug.new()
+		child_slug.add_to_group("slugs")
+		child_slug.can_split = false
+		child_slug.bounces = bounces
+		child_slug.tier = tier
+		child_slug.max_bounces = max_bounces
+		child_slug.lifetime = lifetime
+		child_slug.live_speed_bonus = live_speed_bonus
+		get_tree().current_scene.add_child(child_slug)
+		child_slug.setup(global_position, velocity.normalized().rotated(deg_to_rad(angle)))
+		child_slug.state = State.LIVE

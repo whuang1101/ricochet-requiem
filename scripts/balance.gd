@@ -30,6 +30,12 @@ const CADENZA_DURATION := 3.0
 const GRAND_CADENZA_DURATION := 5.0
 const CADENZA_TIME_SCALE := 0.2
 const P0_ROOM_COUNT := 5
+const ACT1_ROOM_COUNT := 15
+const FLOURISH_HIT_STOP := 0.12
+const FLOURISH_MOTIFS_PER_EXTRA_KILL := 2
+const MUZZLE_NUDGE := 3.0
+const CAMERA_SHAKE_ON_KILL := 0.18
+const TRAIL_LENGTH := 12
 const TUNING_DURATION := 2.5
 const RESONANCE_HEAL := 2
 const RESONANCE_LIFETIME := 8.0
@@ -39,9 +45,17 @@ const ENEMY_SPEED := {
 	"chorister": 72.0,
 	"sidler": 96.0,
 	"wailer": 60.0,
+	"mirrorback": 48.0,
+	"mason": 42.0,
+	"bellringer": 84.0,
+	"organist": 28.0,
 }
 const ENEMY_HP := {
 	"chorister": 3,
 	"sidler": 4,
 	"wailer": 3,
+	"mirrorback": 6,
+	"mason": 5,
+	"bellringer": 10,
+	"organist": 40,
 }

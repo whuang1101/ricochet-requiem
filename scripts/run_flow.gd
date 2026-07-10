@@ -27,4 +27,4 @@ func choose_next_room() -> bool:
 	if not waiting_for_door:
 		return false
 	room_index += 1
-	return room_index < Balance.P0_ROOM_COUNT
+	return room_index < Balance.ACT1_ROOM_COUNT
