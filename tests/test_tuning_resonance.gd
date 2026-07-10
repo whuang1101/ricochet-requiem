@@ -7,6 +7,7 @@ var failures: Array[String] = []
 func _init() -> void:
 	var target := EnemyScript.new()
 	target.configure("chorister")
+	_check(Balance.ENEMY_HP["sidler"] > Balance.ENEMY_HP["chorister"] and Balance.ENEMY_SPEED["wailer"] > 0.0, "all P0 enemy configurations must exist")
 	var dead_result := target.apply_slug_hit(Slug.State.DEAD, 0)
 	_check(dead_result.tuned and target.hp == Balance.ENEMY_HP["chorister"], "dead slug must tune without dealing damage")
 	var tuned_live := target.apply_slug_hit(Slug.State.LIVE, 1)

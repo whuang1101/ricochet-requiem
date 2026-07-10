@@ -1,6 +1,8 @@
 class_name RequiemPlayer
 extends CharacterBody2D
 
+signal damaged(amount: int, hp_remaining: int)
+
 var _dash_timer := 0.0
 var _dash_cooldown := 0.0
 var _aim_direction := Vector2.RIGHT
@@ -24,11 +26,28 @@ func _physics_process(delta: float) -> void:
 		_aim_direction = _aim_direction.normalized()
 	queue_redraw()
 
+func _ready() -> void:
+	if get_node_or_null("Hurtbox") == null:
+		var hurtbox := Area2D.new()
+		hurtbox.name = "Hurtbox"
+		hurtbox.collision_layer = 8
+		hurtbox.collision_mask = 2 | 4
+		var collision_shape := CollisionShape2D.new()
+		var circle := CircleShape2D.new()
+		circle.radius = Balance.PLAYER_RADIUS
+		collision_shape.shape = circle
+		hurtbox.add_child(collision_shape)
+		add_child(hurtbox)
+
 func aim_direction() -> Vector2:
 	return _aim_direction
 
 func heal(amount: int) -> void:
 	hp = mini(hp + amount, Balance.PLAYER_MAX_HP)
+
+func take_damage(amount: int) -> void:
+	hp = maxi(hp - amount, 0)
+	damaged.emit(amount, hp)
 
 func _draw() -> void:
 	draw_circle(Vector2.ZERO, Balance.PLAYER_RADIUS, Color("#f2eee5"))

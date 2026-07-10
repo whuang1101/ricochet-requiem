@@ -26,7 +26,7 @@ func setup(origin: Vector2, shot_direction: Vector2) -> void:
 		var hitbox := Area2D.new()
 		hitbox.name = "Hitbox"
 		hitbox.collision_layer = 4
-		hitbox.collision_mask = 2
+		hitbox.collision_mask = 2 | 8
 		var hit_shape := CollisionShape2D.new()
 		var hit_circle := CircleShape2D.new()
 		hit_circle.radius = Balance.SLUG_RADIUS
@@ -91,3 +91,8 @@ func _tier_color() -> Color:
 func _on_hit_area(area: Area2D) -> void:
 	if area is RequiemEnemy:
 		area.apply_slug_hit(state, bounces)
+	elif area.name == "Hurtbox" and state == State.LIVE:
+		var player := area.get_parent()
+		if player:
+			var damage := ceili(Balance.DAMAGE_TIERS[tier] * Balance.SELF_DAMAGE_FRACTION)
+			player.take_damage(damage)

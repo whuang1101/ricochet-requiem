@@ -4,8 +4,11 @@ const PlayerScript := preload("res://scripts/player.gd")
 const ShooterScript := preload("res://scripts/shooter.gd")
 const EnemyScript := preload("res://scripts/enemy.gd")
 const ResonanceNoteScript := preload("res://scripts/resonance_note.gd")
+const WailerShotScript := preload("res://scripts/wailer_shot.gd")
+const RequiemScript := preload("res://scripts/requiem.gd")
 
 var _hud: Label
+var _requiem: Requiem
 
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color("#171820"))
@@ -13,8 +16,11 @@ func _ready() -> void:
 	var player := PlayerScript.new()
 	player.position = Vector2.ZERO
 	player.add_to_group("player")
+	player.damaged.connect(_on_player_damaged)
 	player.add_child(ShooterScript.new())
 	add_child(player)
+	_requiem = RequiemScript.new()
+	add_child(_requiem)
 	_spawn_enemy("chorister", Vector2(-260.0, -140.0))
 	_spawn_enemy("sidler", Vector2(280.0, -120.0))
 	_spawn_enemy("wailer", Vector2(220.0, 150.0))
@@ -23,21 +29,31 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if is_instance_valid(_hud):
 		var player := get_tree().get_first_node_in_group("player")
-		_hud.text = "RICOCHET REQUIEM  //  P0 GRAY ROOM\nWASD move   SPACE dash   LMB fire\nDead slugs tune. First wall bounce makes them LIVE.\nHP %d / %d   Slugs %d / %d" % [player.hp, Balance.PLAYER_MAX_HP, get_tree().get_nodes_in_group("slugs").size(), Balance.MAX_SLUGS]
+		_hud.text = "RICOCHET REQUIEM  //  P0 GRAY ROOM\nWASD move   SPACE dash   LMB fire   Q Cadenza\nDead slugs tune. First wall bounce makes them LIVE.\nHP %d / %d   Notes %d / %d   Slugs %d / %d" % [player.hp, Balance.PLAYER_MAX_HP, _requiem.notes, Balance.REQUIEM_BANK_CAP, get_tree().get_nodes_in_group("slugs").size(), Balance.MAX_SLUGS]
 
 func _spawn_enemy(kind: String, at: Vector2) -> void:
 	var enemy := EnemyScript.new()
 	enemy.global_position = at
 	enemy.configure(kind)
 	enemy.died.connect(_on_enemy_died)
+	enemy.shot_fired.connect(_on_wailer_shot)
 	add_child(enemy)
 
-func _on_enemy_died(at: Vector2, spawn_resonance: bool) -> void:
+func _on_enemy_died(at: Vector2, spawn_resonance: bool, bounces: int, tuned: bool) -> void:
+	_requiem.award_kill(bounces, tuned)
 	if not spawn_resonance:
 		return
 	var note := ResonanceNoteScript.new()
 	note.global_position = at
 	add_child(note)
+
+func _on_wailer_shot(origin: Vector2, direction: Vector2) -> void:
+	var shot := WailerShotScript.new()
+	add_child(shot)
+	shot.setup(origin, direction)
+
+func _on_player_damaged(_amount: int, _hp_remaining: int) -> void:
+	_requiem.on_player_hit()
 
 func _build_room() -> void:
 	var half := Balance.ROOM_SIZE / 2.0

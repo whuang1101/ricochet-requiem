@@ -13,3 +13,4 @@ run() {
 run --editor --quit
 run --script res://tests/test_slug_physics.gd
 run --script res://tests/test_tuning_resonance.gd
+run --script res://tests/test_requiem.gd
